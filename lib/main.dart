@@ -1,11 +1,46 @@
 // ignore_for_file: avoid_print
 
+import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+class SongStorage {
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/TS/counter.txt');
+  }
+
+  Future<String> readSong() async {
+    try {
+      final file = await _localFile;
+      final contents = await file.readAsString();
+      print(contents);
+      return contents;
+    } catch (e) {
+      // If encountering an error, return 0
+      return "e";
+    }
+  }
+
+  Future<File> writeSong(String counter) async {
+    final file = await _localFile;
+
+    // Write the file
+    return file.writeAsString(counter);
+  }
+}
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -67,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PlayPage()),
+                    MaterialPageRoute(builder: (context) =>  PlayPage(storage: SongStorage())),
                   );
                 },
                 child: Text("Play"))
@@ -84,21 +119,33 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class PlayPage extends StatefulWidget {
-  const PlayPage({super.key});
+  const PlayPage({super.key, required this.storage});
+  final SongStorage storage;
 
   @override
   _PlayPageState createState() => _PlayPageState();
+
 }
 
 class _PlayPageState extends State<PlayPage> {
   @override
+  String song = "e";
+  void initState() {
+    super.initState();
+    widget.storage.readSong().then((value) {
+      setState(() {
+        song = value;
+      });
+    });
+  }
+  
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Play"),
       ),
-      body: const Center(
-        child: Text("Play"),
+      body: Center(
+        child: Column(children: [Text("$song"),],)
       ),
     );
   }
