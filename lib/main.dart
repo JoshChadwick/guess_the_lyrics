@@ -25,7 +25,6 @@ class SongStorage {
     try {
       final file = await _localFile;
       final contents = await file.readAsString();
-      print(contents);
       return contents;
     } catch (e) {
       // If encountering an error, return 0
@@ -40,7 +39,6 @@ class SongStorage {
     return file.writeAsString(counter);
   }
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -102,7 +100,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  PlayPage(storage: SongStorage())),
+                    MaterialPageRoute(
+                        builder: (context) => PlayPage(storage: SongStorage())),
                   );
                 },
                 child: Text("Play"))
@@ -124,29 +123,132 @@ class PlayPage extends StatefulWidget {
 
   @override
   _PlayPageState createState() => _PlayPageState();
-
 }
 
 class _PlayPageState extends State<PlayPage> {
   @override
-  String song = "e";
+  final TextEditingController _controller = TextEditingController();
+
+  List<String> song = [];
+  List<String> displayLines = [];
+  List<String> words = [];
+  List<String> lines = [];
+  String guess = "";
+
   void initState() {
     super.initState();
+
     widget.storage.readSong().then((value) {
+      lines = processLyrics(value);
+      displayLines = getDisplayLines(lines);
+      words = getWords(lines);
+      print(words);
+      _controller.addListener(checkGuess);
+
       setState(() {
-        song = value;
+        song = displayLines;
       });
     });
   }
-  
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool linearSearch(List<String> list, String word) {
+    bool result=false;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].toUpperCase() == word.toUpperCase()) {
+        result= true;
+      }
+    }
+    return result;
+  }
+
+  List<String> getWords(List<String> lines) {
+    List<String> words = [];
+    for (var i = 0; i < lines.length; i++) {
+      if (words.contains(lines[i])==false) {
+        words.add(lines[i].toUpperCase());
+      }
+    }
+    return words;
+  }
+
+  void checkGuess() {
+    var guess = _controller.text.toUpperCase();
+    for(var word =0; word<lines.length; word++){
+      if(lines[word].toUpperCase()==guess){
+          if(words.contains(guess)){
+          _controller.clear();}
+          words.remove(guess);
+          displayLines[word]=lines[word];
+      }
+    }
+    
+    setState(() {
+        song = displayLines;
+      });    
+  }
+
+  List<String> getDisplayLines(List<String> lines) {
+    List<String> displayLines = [];
+    for (var word = 0; word < lines.length; word++) {
+      displayLines.add("_____");
+    }
+    return displayLines;
+  }
+
+  List<String> processLyrics(String lyrics) {
+    List<String> lines = lyrics.split("\n");
+    List<String> lines2 = [];
+    for(var word=0; word<lines.length; word++){
+      lines2.add(lines[word].substring(0,lines[word].length-1));
+    }
+    return lines2;
+  }
+
   Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+    final double itemHeight = (size.height - kToolbarHeight - 24) / 2;
+    final double itemWidth = size.width / 2;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Play"),
-      ),
-      body: Center(
-        child: Column(children: [Text("$song"),],)
-      ),
-    );
+        appBar: AppBar(
+          title: const Text("Play"),
+        ),
+        body: Column(children: <Widget>[
+          TextFormField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Enter a search term',
+              )),
+          Expanded(
+            child: SizedBox(
+              child: GridView.count(
+                  padding: const EdgeInsets.all(2),
+                  childAspectRatio: (itemWidth / itemHeight),
+                  crossAxisCount: 20,
+                  mainAxisSpacing: 0,
+                  shrinkWrap: true,
+                  children: List.generate(song.length, (index) {
+                    return Container(
+                      decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black)),
+                      child: Center(
+                        child: Text(
+                          song[index],
+                          style: const TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  })),
+            ),
+          ),
+        ]));
   }
 }
