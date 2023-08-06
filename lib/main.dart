@@ -133,6 +133,8 @@ class _PlayPageState extends State<PlayPage> {
   List<String> displayLines = [];
   List<String> words = [];
   List<String> lines = [];
+  var curCount = 0;
+  var maxCount;
   String guess = "";
 
   void initState() {
@@ -142,7 +144,7 @@ class _PlayPageState extends State<PlayPage> {
       lines = processLyrics(value);
       displayLines = getDisplayLines(lines);
       words = getWords(lines);
-      print(words);
+      maxCount = displayLines.length;
       _controller.addListener(checkGuess);
 
       setState(() {
@@ -158,10 +160,10 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   bool linearSearch(List<String> list, String word) {
-    bool result=false;
+    bool result = false;
     for (var i = 0; i < list.length; i++) {
       if (list[i].toUpperCase() == word.toUpperCase()) {
-        result= true;
+        result = true;
       }
     }
     return result;
@@ -170,7 +172,8 @@ class _PlayPageState extends State<PlayPage> {
   List<String> getWords(List<String> lines) {
     List<String> words = [];
     for (var i = 0; i < lines.length; i++) {
-      if (words.contains(lines[i])==false) {
+      if (words.contains(lines[i].toUpperCase()) == false) {
+        print(lines[i].toUpperCase());
         words.add(lines[i].toUpperCase());
       }
     }
@@ -179,18 +182,26 @@ class _PlayPageState extends State<PlayPage> {
 
   void checkGuess() {
     var guess = _controller.text.toUpperCase();
-    for(var word =0; word<lines.length; word++){
-      if(lines[word].toUpperCase()==guess){
-          if(words.contains(guess)){
-          _controller.clear();}
-          words.remove(guess);
-          displayLines[word]=lines[word];
+    var count = 0;
+
+    for (var word = 0; word < lines.length; word++) {
+      if (lines[word].toUpperCase() == guess) {
+        count+=1;
+        displayLines[word] = lines[word];
       }
     }
-    
+
+    for(var word=0; word<words.length;word++){
+      if (words[word]==guess) {
+        _controller.clear();
+        words.remove(guess);
+        curCount+= count;
+      }
+    }
+
     setState(() {
-        song = displayLines;
-      });    
+      song = displayLines;
+    });
   }
 
   List<String> getDisplayLines(List<String> lines) {
@@ -204,8 +215,8 @@ class _PlayPageState extends State<PlayPage> {
   List<String> processLyrics(String lyrics) {
     List<String> lines = lyrics.split("\n");
     List<String> lines2 = [];
-    for(var word=0; word<lines.length; word++){
-      lines2.add(lines[word].substring(0,lines[word].length-1));
+    for (var word = 0; word < lines.length; word++) {
+      lines2.add(lines[word].substring(0, lines[word].length - 1));
     }
     return lines2;
   }
@@ -216,7 +227,14 @@ class _PlayPageState extends State<PlayPage> {
     final double itemWidth = size.width / 2;
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Play"),
+          title: Row(
+            children: [
+              Text("Guess The Lyrics"),
+              const SizedBox(width: 50),
+              Text("$curCount/$maxCount")
+            ],
+          ),
+          titleSpacing: 0.0,
         ),
         body: Column(children: <Widget>[
           TextFormField(
@@ -252,3 +270,6 @@ class _PlayPageState extends State<PlayPage> {
         ]));
   }
 }
+
+
+
